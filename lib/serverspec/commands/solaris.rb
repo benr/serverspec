@@ -2,37 +2,37 @@ module Serverspec
   module Commands
     class Solaris < Base
       def check_enabled(service, level=3)
-        "svcs -l #{escape(service)} 2> /dev/null | egrep '^enabled *true$'"
+        "svcs -l #{escape(service)} 2> /dev/null | /usr/xpg4/bin/egrep '^enabled *true$'"
       end
 
       def check_installed(package, version=nil)
         cmd = "pkg list -H #{escape(package)} 2> /dev/null"
         if version
-          cmd = "#{cmd} | grep -qw -- #{escape(version)}"
+          cmd = "#{cmd} | /usr/xpg4/bin/grep -qw -- #{escape(version)}"
         end
         cmd
       end
 
       def check_listening(port)
         regexp = "\\.#{port} "
-        "netstat -an 2> /dev/null | grep -- LISTEN | grep -- #{escape(regexp)}"
+        "netstat -an 2> /dev/null | /usr/xpg4/bin/grep -- LISTEN | /usr/xpg4/bin/grep -- #{escape(regexp)}"
       end
 
       def check_listening_with_protocol(port, protocol)
         regexp = ".*\\.#{port} "
-        "netstat -an -P #{escape(protocol)} 2> /dev/null | grep -- LISTEN | grep -- #{escape(regexp)}"
+        "netstat -an -P #{escape(protocol)} 2> /dev/null | /usr/xpg4/bin/grep -- LISTEN | /usr/xpg4/bin/grep -- #{escape(regexp)}"
       end
 
       def check_running(service)
-        "svcs -l #{escape(service)} status 2> /dev/null | egrep '^state *online$'"
+        "svcs -l #{escape(service)} status 2> /dev/null | /usr/xpg4/bin/egrep '^state *online$'"
       end
 
       def check_cron_entry(user, entry)
         entry_escaped = entry.gsub(/\*/, '\\*')
         if user.nil?
-          "crontab -l | grep -- #{escape(entry_escaped)}"
+          "crontab -l | /usr/xpg4/bin/grep -- #{escape(entry_escaped)}"
         else
-          "crontab -l #{escape(user)} | grep -- #{escape(entry_escaped)}"
+          "crontab -l #{escape(user)} | /usr/xpg4/bin/grep -- #{escape(entry_escaped)}"
         end
       end
 
@@ -43,33 +43,37 @@ module Serverspec
           commands = []
           property.sort.each do |key, value|
             regexp = "^#{value}$"
-            commands << "zfs list -H -o #{escape(key)} #{escape(zfs)} | grep -- #{escape(regexp)}"
+            commands << "zfs list -H -o #{escape(key)} #{escape(zfs)} | /usr/xpg4/bin/grep -- #{escape(regexp)}"
           end
           commands.join(' && ')
         end
       end
 
       def check_ipfilter_rule(rule)
-        "ipfstat -io 2> /dev/null | grep -- #{escape(rule)}"
+        "ipfstat -io 2> /dev/null | /usr/xpg4/bin/grep -- #{escape(rule)}"
       end
 
       def check_ipnat_rule(rule)
         regexp = "^#{rule}$"
-        "ipnat -l 2> /dev/null | grep -- #{escape(regexp)}"
+        "ipnat -l 2> /dev/null | /usr/xpg4/bin/grep -- #{escape(regexp)}"
       end
 
       def check_svcprop(svc, property, value)
         regexp = "^#{value}$"
-        "svcprop -p #{escape(property)} #{escape(svc)} | grep -- #{escape(regexp)}"
+        "svcprop -p #{escape(property)} #{escape(svc)} | /usr/xpg4/bin/grep -- #{escape(regexp)}"
       end
 
       def check_svcprops(svc, property)
         commands = []
         property.sort.each do |key, value|
           regexp = "^#{value}$"
-          commands << "svcprop -p #{escape(key)} #{escape(svc)} | grep -- #{escape(regexp)}"
+          commands << "svcprop -p #{escape(key)} #{escape(svc)} | /usr/xpg4/bin/grep -- #{escape(regexp)}"
         end
         commands.join(' && ')
+      end
+
+      def check_file_contain(file, expected_pattern)
+        "/usr/xpg4/bin/grep -q -- #{escape(expected_pattern)} #{escape(file)}"
       end
 
       def check_file_contain_within(file, expected_pattern, from=nil, to=nil)
@@ -80,20 +84,20 @@ module Serverspec
       end
 
       def check_belonging_group(user, group)
-        "id -Gn #{escape(user)} | grep -- #{escape(group)}"
+        "id -Gn #{escape(user)} | /usr/xpg4/bin/grep -- #{escape(group)}"
       end
 
       def check_gid(group, gid)
         regexp = "^#{group}:"
-        "getent group | grep -- #{escape(regexp)} | cut -f 3 -d ':' | grep -w -- #{escape(gid)}"
+        "getent group | /usr/xpg4/bin/grep -- #{escape(regexp)} | cut -f 3 -d ':' | /usr/xpg4/bin/grep -w -- #{escape(gid)}"
       end
 
       def check_home_directory(user, path_to_home)
-        "getent passwd #{escape(user)} | cut -f 6 -d ':' | grep -w -- #{escape(path_to_home)}"
+        "getent passwd #{escape(user)} | cut -f 6 -d ':' | /usr/xpg4/bin/grep -w -- #{escape(path_to_home)}"
       end
 
       def check_login_shell(user, path_to_shell)
-        "getent passwd #{escape(user)} | cut -f 7 -d ':' | grep -w -- #{escape(path_to_shell)}"
+        "getent passwd #{escape(user)} | cut -f 7 -d ':' | /usr/xpg4/bin/grep -w -- #{escape(path_to_shell)}"
       end
 
       def check_access_by_user(file, user, access)
@@ -110,6 +114,7 @@ module Serverspec
           "nc -vvvvz#{escape(proto[0].chr)} -w #{escape(timeout)} #{escape(host)} #{escape(port)}"
         end
       end
+
     end
   end
 end
